@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="UniversityDB" default="info" basedir=".">
+    
+    <!-- Свойства подключения к БД -->
+    <property name="db.driver" value="org.postgresql.Driver"/>
+    <property name="db.url" value="jdbc:postgresql://localhost:5432/"/>
+    <property name="db.host" value="localhost"/>
+    <property name="db.port" value="5432"/>
+    <property name="db.name" value="university_db"/>
+    <property name="db.user" value="postgres"/>
+    <property name="db.password" value="Lbfyf2005"/>
+    <property name="db.admin.user" value="postgres"/>
+    <property name="db.admin.password" value="Lbfyf2005"/>
+    
+    <!-- Пути к файлам -->
+    <property name="sql.dir" value="sql"/>
+    <property name="sql.create" value="${sql.dir}/create_tables.sql"/>
+    <property name="sql.init" value="${sql.dir}/init_data.sql"/>
+    <property name="sql.drop" value="${sql.dir}/drop_tables.sql"/>
+    <property name="sql.dump" value="${sql.dir}/dump.sql"/>
+    <property name="backup.dir" value="backup"/>
+    
+    <!-- Классpath для PostgreSQL JDBC драйвера -->
+    <path id="classpath">
+        <fileset dir="lib">
+            <include name="postgresql-*.jar"/>
+        </fileset>
+    </path>
+    
+    <!-- Инициализация - создание директорий -->
+    <target name="init">
+        <echo message="Создание необходимых директорий..."/>
+        <mkdir dir="${sql.dir}"/>
+        <mkdir dir="${backup.dir}"/>
+        <echo message="Директории созданы"/>
+    </target>
+    
+    <!-- Информация о проекте -->
+    <target name="info" depends="init">
+        <echo message="========================================="/>
+        <echo message="Управление базой данных университета"/>
+        <echo message="========================================="/>
+        <echo message="Доступные задачи:"/>
+        <echo message="  ant create-db    - создание базы данных"/>
+        <echo message="  ant create-tables - создание таблиц"/>
+        <echo message="  ant init-data     - заполнение тестовыми данными"/>
+        <echo message="  ant init-all      - полная инициализация (все вместе)"/>
+        <echo message="  ant view-all      - просмотр содержимого всех таблиц"/>
+        <echo message="  ant view-table    - просмотр конкретной таблицы (нужно задать table.name)"/>
+        <echo message="  ant backup        - создание резервной копии"/>
+        <echo message="  ant restore       - восстановление из резервной копии"/>
+        <echo message="  ant drop-db       - удаление базы данных"/>
+        <echo message="  ant clean         - очистка всех данных"/>
+        <echo message="  ant drop-tables   - удаление всех таблиц"/>
+        <echo message="========================================="/>
+    </target>
+    
+    <!-- Проверка существования базы данных -->
+    <target name="check-db-exists">
+        <condition property="db.exists">
+            <available file="${backup.dir}/db_exists.txt" type="file"/>
+        </condition>
+    </target>
+    
+    <!-- Создание базы данных -->
+    <target name="create-db" description="Создание базы данных">
+        <echo message="Создание базы данных ${db.name}..."/>
+        <sql driver="${db.driver}"
+             url="${db.url}"
+             userid="${db.admin.user}"
+             password="${db.admin.password}"
+             classpathref="classpath"
+             onerror="continue"
+             autocommit="true">
+            <transaction>
+                DROP DATABASE IF EXISTS ${db.name};
+            </transaction>
+            <transaction>
+                CREATE DATABASE ${db.name} 
+                ENCODING 'UTF8' 
+                LC_COLLATE 'ru_RU.UTF-8' 
+                LC_CTYPE 'ru_RU.UTF-8'
+                TEMPLATE template0;
+            </transaction>
+        </sql>
+        <echo message="База данных ${db.name} успешно создана"/>
+        <echo message="CREATE DATABASE ${db.name};" file="${backup.dir}/db_exists.txt"/>
+    </target>
+    
+    <!-- Создание таблиц -->
+    <target name="create-tables" depends="create-db" description="Создание таблиц">
+        <echo message="Создание таблиц в базе ${db.name}..."/>
+        <sql driver="${db.driver}"
+             url="${db.url}${db.name}"
+             userid="${db.user}"
+             password="${db.password}"
+             classpathref="classpath"
+             src="${sql.create}"
+             print="true"
+             output="${backup.dir}/create_tables.log">
+        </sql>
+        <echo message="Таблицы успешно созданы"/>
+    </target>
+    
+    <!-- Инициализация тестовыми данными -->
+    <target name="init-data" depends="create-tables" description="Заполнение тестовыми данными">
+        <echo message="Заполнение базы тестовыми данными..."/>
+        <sql driver="${db.driver}"
+             url="${db.url}${db.name}"
+             userid="${db.user}"
+             password="${db.password}"
+             classpathref="classpath"
+             src="${sql.init}"
+             print="true"
+             output="${backup.dir}/init_data.log">
+        </sql>
+        <echo message="Тестовые данные успешно загружены"/>
+    </target>
+    
+    <!-- Полная инициализация -->
+    <target name="init-all" depends="init-data" description="Полная инициализация БД">
+        <echo message="========================================="/>
+        <echo message="База данных полностью инициализирована"/>
+        <echo message="========================================="/>
+    </target>
+    
+    <!-- Просмотр всех таблиц -->
+    <target name="view-all" depends="check-db-exists" description="Просмотр всех таблиц">
+        <fail message="База данных не существует. Сначала выполните ant init-all" unless="db.exists"/>
+        
+        <echo message="========================================="/>
+        <echo message="СОДЕРЖИМОЕ БАЗЫ ДАННЫХ ${db.name}"/>
+        <echo message="========================================="/>
+        
+        <!-- Список всех таблиц -->
+        <sql driver="${db.driver}"
+             url="${db.url}${db.name}"
+             userid="${db.user}"
+             password="${db.password}"
+             classpathref="classpath"
+             print="true"
+             output="${backup.dir}/tables_list.txt">
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            ORDER BY table_name;
+        </sql>
+        
+        <!-- Вывод содержимого каждой таблицы -->
+        <for list="faculty,teachers,rooms,courses,teachers_courses,study_groups,courses_groups,classes,teachers_classes,students,students_courses" 
+             param="table" 
+             xmlns:ant="urn:ant">
+            <sequential>
+                <echo message="-----------------------------------------"/>
+                <echo message="Таблица: @{table}"/>
+                <echo message="-----------------------------------------"/>
+                <sql driver="${db.driver}"
+                     url="${db.url}${db.name}"
+                     userid="${db.user}"
+                     password="${db.password}"
+                     classpathref="classpath"
+                     print="true">
+                    SELECT * FROM @{table} LIMIT 20;
+                </sql>
+            </sequential>
+        </for>
+    </target>
+    
+    <!-- Просмотр конкретной таблицы -->
+    <target name="view-table" description="Просмотр конкретной таблицы">
+        <fail message="Не указано имя таблицы. Используйте: ant view-table -Dtable.name=students" unless="table.name"/>
+        
+        <echo message="========================================="/>
+        <echo message="Таблица: ${table.name}"/>
+        <echo message="========================================="/>
+        
+        <sql driver="${db.driver}"
+             url="${db.url}${db.name}"
+             userid="${db.user}"
+             password="${db.password}"
+             classpathref="classpath"
+             print="true">
+            SELECT * FROM ${table.name};
+        </sql>
+    </target>
+    
+    <!-- Выполнение произвольного SQL запроса -->
+    <target name="query" description="Выполнение SQL запроса">
+        <fail message="Не указан SQL запрос. Используйте: ant query -Dsql=SELECT * FROM students" unless="sql"/>
+        
+        <echo message="Выполнение запроса: ${sql}"/>
+        <sql driver="${db.driver}"
+             url="${db.url}${db.name}"
+             userid="${db.user}"
+             password="${db.password}"
+             classpathref="classpath"
+             print="true">
+            ${sql}
+        </sql>
+    </target>
+    
+    <!-- Создание резервной копии -->
+    <target name="backup" description="Создание резервной копии БД">
+        <tstamp>
+            <format property="backup.time" pattern="yyyyMMdd_HHmmss"/>
+        </tstamp>
+        
+        <property name="backup.file" value="${backup.dir}/backup_${backup.time}.sql"/>
+        
+        <echo message="Создание резервной копии в ${backup.file}..."/>
+        
+        <exec executable="pg_dump" osfamily="unix">
+            <arg value="-h"/>
+            <arg value="${db.host}"/>
+            <arg value="-p"/>
+            <arg value="${db.port}"/>
+            <arg value="-U"/>
+            <arg value="${db.user}"/>
+            <arg value="-f"/>
+            <arg value="${backup.file}"/>
+            <arg value="${db.name}"/>
+        </exec>
+        
+        <exec executable="pg_dump" osfamily="windows">
+            <arg value="-h"/>
+            <arg value="${db.host}"/>
+            <arg value="-p"/>
+            <arg value="${db.port}"/>
+            <arg value="-U"/>
+            <arg value="${db.user}"/>
+            <arg value="-f"/>
+            <arg value="${backup.file}"/>
+            <arg value="${db.name}"/>
+        </exec>
+        
+        <echo message="Резервная копия создана: ${backup.file}"/>
+    </target>
+    
+    <!-- Восстановление из резервной копии -->
+    <target name="restore" description="Восстановление из резервной копии">
+        <fail message="Укажите файл для восстановления: ant restore -Dbackup.file=backup.sql" unless="backup.file"/>
+        
+        <echo message="Восстановление из ${backup.file}..."/>
+        
+        <!-- Сначала удаляем старую БД -->
+        <antcall target="drop-db"/>
+        
+        <!-- Создаем новую -->
+        <antcall target="create-db"/>
+        
+        <!-- Восстанавливаем данные -->
+        <exec executable="psql" osfamily="unix">
+            <arg value="-h"/>
+            <arg value="${db.host}"/>
+            <arg value="-p"/>
+            <arg value="${db.port}"/>
+            <arg value="-U"/>
+            <arg value="${db.user}"/>
+            <arg value="-d"/>
+            <arg value="${db.name}"/>
+            <arg value="-f"/>
+            <arg value="${backup.file}"/>
+        </exec>
+        
+        <exec executable="psql" osfamily="windows">
+            <arg value="-h"/>
+            <arg value="${db.host}"/>
+            <arg value="-p"/>
+            <arg value="${db.port}"/>
+            <arg value="-U"/>
+            <arg value="${db.user}"/>
+            <arg value="-d"/>
+            <arg value="${db.name}"/>
+            <arg value="-f"/>
+            <arg value="${backup.file}"/>
+        </exec>
+        
+        <echo message="Восстановление завершено"/>
+    </target>
+    
+</project>
+    
