@@ -13,12 +13,6 @@ public class LessonGroupDAOTest extends BaseDaoTest {
     @Autowired
     private LessonGroupDAO lessonGroupDAO;
 
-    @Autowired
-    private LessonDAO lessonDAO;
-
-    @Autowired
-    private StudyGroupDAO studyGroupDAO;
-
     @Test
     public void testFindByGroupId() {
         List<LessonGroup> lessonGroups = lessonGroupDAO.findByGroupId(1L);
@@ -41,5 +35,27 @@ public class LessonGroupDAOTest extends BaseDaoTest {
                 .anyMatch(lg -> lg.getLesson().getId().equals(3L));
 
         assertTrue(found);
+    }
+
+    @Test
+    public void testAssignLessonToGroupLessonNotFound() {
+        lessonGroupDAO.assignLessonToGroup(999999L, 1L);
+
+        List<LessonGroup> lessonGroups = lessonGroupDAO.findByGroupId(1L);
+        boolean found = lessonGroups.stream()
+                .anyMatch(lg -> lg.getLesson().getId().equals(999999L));
+
+        assertFalse(found);
+    }
+
+    @Test
+    public void testAssignLessonToGroupGroupNotFound() {
+        lessonGroupDAO.assignLessonToGroup(1L, 999999L);
+
+        List<LessonGroup> lessonGroups = lessonGroupDAO.getAll();
+        boolean found = lessonGroups.stream()
+                .anyMatch(lg -> lg.getGroup().getId().equals(999999L));
+
+        assertFalse(found);
     }
 }

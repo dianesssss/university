@@ -3,6 +3,7 @@ package ru.msu.cmc.webprac.dao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.testng.annotations.Test;
 import ru.msu.cmc.webprac.model.Student;
+import ru.msu.cmc.webprac.model.StudentCourse;
 import ru.msu.cmc.webprac.model.StudyGroup;
 
 import java.time.LocalDate;
@@ -17,6 +18,9 @@ public class StudentDAOTest extends BaseDaoTest {
 
     @Autowired
     private StudyGroupDAO studyGroupDAO;
+
+    @Autowired
+    private StudentCourseDAO studentCourseDAO;
 
     @Test
     public void testGetAll() {
@@ -110,15 +114,34 @@ public class StudentDAOTest extends BaseDaoTest {
     }
 
     @Test
-    public void testFindByGroupIdEmpty() {
+    public void testFindByGroupIdNotExistingGroup() {
         List<Student> students = studentDAO.findByGroupId(999999L);
         assertNotNull(students);
         assertTrue(students.isEmpty());
     }
 
     @Test
+    public void testFindByGroupIdEmptyGroup() {
+        StudyGroup baseGroup = studyGroupDAO.getById(1L);
+        assertNotNull(baseGroup);
+
+        StudyGroup emptyGroup = StudyGroup.builder()
+                .name("EMPTY_GROUP_TEST")
+                .studyYear(1)
+                .faculty(baseGroup.getFaculty())
+                .build();
+
+        emptyGroup = studyGroupDAO.save(emptyGroup);
+
+        List<Student> students = studentDAO.findByGroupId(emptyGroup.getId());
+
+        assertNotNull(students);
+        assertTrue(students.isEmpty());
+    }
+
+    @Test
     public void testFindByFullNameLikeFound() {
-        List<Student> students = studentDAO.findByFullNameLike("смир");
+        List<Student> students = studentDAO.findByFullNameLike("smir");
         assertNotNull(students);
         assertFalse(students.isEmpty());
     }
@@ -128,5 +151,36 @@ public class StudentDAOTest extends BaseDaoTest {
         List<Student> students = studentDAO.findByFullNameLike("zzzzzzzz");
         assertNotNull(students);
         assertTrue(students.isEmpty());
+    }
+
+    @Test
+    public void testAddStudentWithMandatoryCourses() {
+        StudyGroup group = studyGroupDAO.getById(1L);
+        assertNotNull(group);
+
+        Student student = Student.builder()
+                .surname("Авто")
+                .firstName("Курсы")
+                .patronymic("Тестович")
+                .birthDate(LocalDate.of(2005, 2, 2))
+                .email("mandatory_courses_test@mail.ru")
+                .group(group)
+                .build();
+
+        Student saved = studentDAO.addStudentWithMandatoryCourses(student);
+
+        assertNotNull(saved);
+        assertNotNull(saved.getId());
+
+        List<StudentCourse> studentCourses = studentCourseDAO.findByStudentId(saved.getId());
+        assertNotNull(studentCourses);
+
+        assertFalse(studentCourses.isEmpty());
+
+        for (StudentCourse sc : studentCourses) {
+            assertEquals(sc.getStudent().getId(), saved.getId());
+            assertNotNull(sc.getCourse());
+            assertNull(sc.getGrade());
+        }
     }
 }

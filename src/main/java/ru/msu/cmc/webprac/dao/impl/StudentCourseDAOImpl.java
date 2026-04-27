@@ -91,6 +91,10 @@ public class StudentCourseDAOImpl extends AbstractCommonDAO<StudentCourse, Long>
         }
 
         Course course = studentCourse.getCourse();
+        if (course != null && course.getCourseType() != CourseType.SPECIAL) {
+            return false;
+        }
+
         entityManager.remove(studentCourse);
 
         if (course != null && course.getFreePlaces() != null) {

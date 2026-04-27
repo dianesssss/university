@@ -1,13 +1,21 @@
 package ru.msu.cmc.webprac;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.MockedStatic;
+import org.springframework.boot.SpringApplication;
+import org.testng.annotations.Test;
 
-@SpringBootTest
-class WebpracApplicationTests {
+import static org.mockito.Mockito.mockStatic;
 
-	@Test
-	void contextLoads() {
-	}
+public class WebpracApplicationTests {
 
+    @Test
+    public void testMainDelegatesToSpringApplication() {
+        try (MockedStatic<SpringApplication> springApplication = mockStatic(SpringApplication.class)) {
+            String[] args = {"arg"};
+
+            WebpracApplication.main(args);
+
+            springApplication.verify(() -> SpringApplication.run(WebpracApplication.class, args));
+        }
+    }
 }

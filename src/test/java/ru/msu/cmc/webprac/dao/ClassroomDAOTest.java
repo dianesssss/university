@@ -26,9 +26,9 @@ public class ClassroomDAOTest extends BaseDaoTest {
 
     @Test
     public void testFindByRoomNumberFound() {
-        Classroom classroom = classroomDAO.findByRoomNumber("П-8");
+        Classroom classroom = classroomDAO.findByRoomNumber("P-8");
         assertNotNull(classroom);
-        assertEquals(classroom.getRoomNumber(), "П-8");
+        assertEquals(classroom.getRoomNumber(), "P-8");
     }
 
     @Test

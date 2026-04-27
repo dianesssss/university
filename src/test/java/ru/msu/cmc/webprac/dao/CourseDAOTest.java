@@ -68,11 +68,33 @@ public class CourseDAOTest extends BaseDaoTest {
         Teacher teacher = teacherDAO.getById(1L);
 
         Course course = Course.builder()
-                .name("Курс без мест")
+                .name("Курс без мест test")
                 .courseType(CourseType.SPECIAL)
                 .maxStudents(10)
                 .freePlaces(0)
                 .description("Тест")
+                .teacher(teacher)
+                .build();
+
+        Course saved = courseDAO.save(course);
+        assertFalse(courseDAO.hasFreePlaces(saved.getId()));
+    }
+
+    @Test
+    public void testHasFreePlacesCourseNotFound() {
+        assertFalse(courseDAO.hasFreePlaces(999999L));
+    }
+
+    @Test
+    public void testHasFreePlacesWhenNull() {
+        Teacher teacher = teacherDAO.getById(1L);
+
+        Course course = Course.builder()
+                .name("Null free places test")
+                .courseType(CourseType.SPECIAL)
+                .maxStudents(10)
+                .freePlaces(null)
+                .description("РўРµСЃС‚")
                 .teacher(teacher)
                 .build();
 
@@ -94,5 +116,80 @@ public class CourseDAOTest extends BaseDaoTest {
         courseDAO.increaseFreePlaces(course.getId());
         Course afterIncrease = courseDAO.getById(course.getId());
         assertEquals(afterIncrease.getFreePlaces(), oldValue);
+    }
+
+    @Test
+    public void testDecreaseFreePlacesWhenZero() {
+        Teacher teacher = teacherDAO.getById(1L);
+
+        Course course = Course.builder()
+                .name("Decrease zero test")
+                .courseType(CourseType.SPECIAL)
+                .maxStudents(5)
+                .freePlaces(0)
+                .description("Тест")
+                .teacher(teacher)
+                .build();
+
+        Course saved = courseDAO.save(course);
+
+        courseDAO.decreaseFreePlaces(saved.getId());
+
+        Course after = courseDAO.getById(saved.getId());
+        assertEquals(after.getFreePlaces(), Integer.valueOf(0));
+    }
+
+    @Test
+    public void testDecreaseFreePlacesCourseNotFound() {
+        courseDAO.decreaseFreePlaces(999999L);
+        assertNull(courseDAO.getById(999999L));
+    }
+
+    @Test
+    public void testDecreaseFreePlacesWhenNull() {
+        Teacher teacher = teacherDAO.getById(1L);
+
+        Course course = Course.builder()
+                .name("Decrease null test")
+                .courseType(CourseType.SPECIAL)
+                .maxStudents(5)
+                .freePlaces(null)
+                .description("РўРµСЃС‚")
+                .teacher(teacher)
+                .build();
+
+        Course saved = courseDAO.save(course);
+
+        courseDAO.decreaseFreePlaces(saved.getId());
+
+        Course after = courseDAO.getById(saved.getId());
+        assertNull(after.getFreePlaces());
+    }
+
+    @Test
+    public void testIncreaseFreePlacesCourseNotFound() {
+        courseDAO.increaseFreePlaces(999999L);
+        assertNull(courseDAO.getById(999999L));
+    }
+
+    @Test
+    public void testIncreaseFreePlacesWhenNull() {
+        Teacher teacher = teacherDAO.getById(1L);
+
+        Course course = Course.builder()
+                .name("Increase null test")
+                .courseType(CourseType.SPECIAL)
+                .maxStudents(5)
+                .freePlaces(null)
+                .description("РўРµСЃС‚")
+                .teacher(teacher)
+                .build();
+
+        Course saved = courseDAO.save(course);
+
+        courseDAO.increaseFreePlaces(saved.getId());
+
+        Course after = courseDAO.getById(saved.getId());
+        assertNull(after.getFreePlaces());
     }
 }

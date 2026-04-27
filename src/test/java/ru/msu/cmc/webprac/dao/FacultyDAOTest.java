@@ -22,9 +22,9 @@ public class FacultyDAOTest extends BaseDaoTest {
 
     @Test
     public void testFindByNameFound() {
-        Faculty faculty = facultyDAO.findByName("ВМК");
+        Faculty faculty = facultyDAO.findByName("CMC");
         assertNotNull(faculty);
-        assertEquals(faculty.getName(), "ВМК");
+        assertEquals(faculty.getName(), "CMC");
     }
 
     @Test
@@ -51,5 +51,11 @@ public class FacultyDAOTest extends BaseDaoTest {
         Long id = updated.getId();
         facultyDAO.delete(id);
         assertNull(facultyDAO.getById(id));
+    }
+
+    @Test
+    public void testDeleteNotFound() {
+        facultyDAO.delete(999999L);
+        assertNull(facultyDAO.getById(999999L));
     }
 }

@@ -37,6 +37,16 @@ public class StudentDAOImpl extends AbstractCommonDAO<Student, Long> implements 
     }
 
     @Override
+    public Student findByEmail(String email) {
+        List<Student> students = entityManager.createQuery(
+                        "SELECT s FROM Student s WHERE LOWER(s.email) = :email", Student.class)
+                .setParameter("email", email.toLowerCase())
+                .setMaxResults(1)
+                .getResultList();
+        return students.isEmpty() ? null : students.get(0);
+    }
+
+    @Override
     public Student addStudentWithMandatoryCourses(Student student) {
         entityManager.persist(student);
         entityManager.flush();

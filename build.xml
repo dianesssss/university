@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="webprac" default="full-deploy" basedir=".">
+    <property name="gradle.wrapper" value="gradlew.bat"/>
+    <property name="artifact.dir" value="${basedir}\build\libs"/>
+    <property name="deploy.dir" value="${basedir}\build\deploy"/>
+
+    <target name="clean">
+        <exec executable="cmd" failonerror="true">
+            <arg value="/c"/>
+            <arg value="${gradle.wrapper}"/>
+            <arg value="clean"/>
+        </exec>
+    </target>
+
+    <target name="test">
+        <exec executable="cmd" failonerror="true">
+            <arg value="/c"/>
+            <arg value="${gradle.wrapper}"/>
+            <arg value="test"/>
+        </exec>
+    </target>
+
+    <target name="war">
+        <exec executable="cmd" failonerror="true">
+            <arg value="/c"/>
+            <arg value="${gradle.wrapper}"/>
+            <arg value="bootWar"/>
+        </exec>
+    </target>
+
+    <target name="full-build" depends="clean,test,war"/>
+
+    <target name="deploy" depends="full-build">
+        <mkdir dir="${deploy.dir}"/>
+        <copy todir="${deploy.dir}" overwrite="true">
+            <fileset dir="${artifact.dir}">
+                <include name="*.war"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <target name="full-deploy" depends="deploy"/>
+ </project>
